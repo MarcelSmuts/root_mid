@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bull';
+import { json2csv } from 'json-2-csv';
+import { MIDHeaderRecord } from 'src/models/midRecord';
 
+// TODO: Move these to types files
 export enum JobStatusEnum {
     SUCCESS = "SUCCESS",
     FAILURE = "FAILURE"
@@ -18,10 +21,6 @@ export interface JobFailure extends JobStatus {
   status: JobStatusEnum.FAILURE;
   message: string;
   jobs: Array<Job>;
-}
-
-export type MIDRecord = {
-
 }
 
 @Injectable()
@@ -51,7 +50,17 @@ export class AggregatorService {
     });
   }
 
-  private async createRecords(jobs: Array<Job>): Promise<MIDRecord> {
-    return {}
+  // TODO: Generate CSV
+  private async createRecords(jobs: Array<Job>): Promise<void> {
+
+    const headerRecord = new MIDHeaderRecord({
+      date: 20210101,
+      fileSequenceNumber: 1,
+      supplierId: '1234'
+    })
+
+    const records = jobs.map((job: Job) => {
+      return job.data
+    })
   }
 }

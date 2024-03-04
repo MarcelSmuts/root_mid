@@ -18,6 +18,7 @@ export class BatchProcessor {
   @Process('rootPlatformEvent')
   async handleRootPlatformEvent(job: Job) {
     
+    // If we've reached the max number of attempts, move the job to the failed queue
     if (job.attemptsMade > this.maxAttempts) {
       job.moveToFailed({ message: 'Max attempts reached' });
       return;
@@ -25,6 +26,7 @@ export class BatchProcessor {
 
     this.currentJobs.push(job);
 
+    // If we've reached the max number of jobs, process them
     if (this.currentJobs.length >= this.maxJobs) {
       this.process()
       return
