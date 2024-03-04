@@ -58,6 +58,19 @@ $ yarn run test:e2e
 $ yarn run test:cov
 ```
 
+## Autocannon tests
+
+```bash
+# Send requests for 2 seconds (-d 2) using 10 workers (-w 10) ~ 3k requests
+$ autocannon -d 2 -w 10 -m POST localhost:3000/rootPlatformEvent
+
+# Send requests for 10 seconds (-d 10) using 10 workers (-w 10) ~ 11k requests
+$ autocannon -d 10 -w 10 -m POST localhost:3000/rootPlatformEvent
+
+# Send requests for 60 seconds (-d 10) using 10 workers (-w 10) ~ 80k requests
+$ autocannon -d 60 -w 10 -m POST localhost:3000/rootPlatformEvent
+```
+
 ## Support
 
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).

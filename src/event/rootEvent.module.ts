@@ -3,9 +3,6 @@ import { BullModule } from '@nestjs/bull';
 import { RootEventController } from './rootEvent.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-console.log(process.env.REDIS_HOST)
-console.log(process.env.REDIS_PORT)
-
 @Module({
   imports: [
     BullModule.forRootAsync({
