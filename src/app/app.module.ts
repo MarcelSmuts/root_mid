@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BatchModule } from 'src/batch/batch.module';
-import { RootEventModule } from 'src/event/rootEvent.module';
+import { RootEventModule } from 'src/event/root-event.module';
 
 @Module({
   imports: [

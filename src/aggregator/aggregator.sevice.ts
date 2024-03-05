@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { json2csv } from 'json-2-csv';
-import { MIDHeaderRecord } from 'src/models/midRecord';
+import { MIDHeaderRecord } from 'src/models/mid-record';
 
 // TODO: Move these to types files
 export enum JobStatusEnum {

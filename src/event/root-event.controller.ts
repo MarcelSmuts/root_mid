@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
-import { RootRequest } from 'src/guards/rootRequest.guard';
+import { RootRequest } from 'src/guards/root-request.guard';
 
 
 export interface eventPayload {

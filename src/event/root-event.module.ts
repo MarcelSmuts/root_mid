@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bull';
-import { RootEventController } from './rootEvent.controller';
+import { RootEventController } from './root-event.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
