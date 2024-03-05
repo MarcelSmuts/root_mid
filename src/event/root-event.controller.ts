@@ -1,15 +1,9 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Post, Res, UseGuards } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { RootRequest } from 'src/guards/root-request.guard';
-
-
-export interface eventPayload {
-  webhook_id:	string
-  event: object
-  verification_token?: string
-  environment: string
-}
+import { Response } from 'express';
+import { RootEventPayload } from 'src/models/root-event-payload';
 
 @Controller()
 export class RootEventController {
@@ -18,8 +12,8 @@ export class RootEventController {
 
   @UseGuards(RootRequest)
   @Post('rootPlatformEvent')
-  async rootPlatformEvent(@Body() eventData: eventPayload): Promise<void> {
-    console.log('rootPlatformEvent', eventData)
-    await this.rootPlatformEventQueue.add('rootPlatformEvent', { name: 'rootPlatformEvent' })
+  async rootPlatformEvent(@Body() eventData: RootEventPayload, @Res() response: Response) {
+    await this.rootPlatformEventQueue.add('rootPlatformEvent', eventData)
+    return response.status(HttpStatus.OK).send()
   }
 }

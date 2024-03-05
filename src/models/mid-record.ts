@@ -1,4 +1,6 @@
 import { FlatFileFieldType, padFlatFileField } from "src/utils/flat-file-formatter"
+import { RootEventPayload, RootEventType } from "./root-event-payload"
+import getInstructionUpdateType from "src/utils/root-instruction-update-type"
 
 export enum MIDRecordType {
     Header = 1,
@@ -16,7 +18,7 @@ export enum InstructionUpdateType {
 export interface FlatFileRecord {
     RecordType: FlatFileField<MIDRecordType>
     validate(): void
-    toString(): string
+    format(): string
 }
 
 export interface MIDHeaderRecord extends FlatFileRecord {
@@ -41,7 +43,7 @@ export class FlatFileField<T> {
         this.startingPosition = startingPosition
     }
 
-    toString(): string {
+    format(): string {
         return padFlatFileField(String(this.value), this.type, this.length)
     }
 }
@@ -60,7 +62,7 @@ export class MIDHeaderRecord implements MIDHeaderRecord {
     }
 
     format(): string {
-        return `${this.RecordType.toString()}${this.SupplierId.toString()}${this.FileSequenceNumber.toString()}${this.Date.toString()}`
+        return `${this.RecordType.format()}${this.SupplierId.format()}${this.FileSequenceNumber.format()}${this.Date.format()}`
     }
 }
 
@@ -88,12 +90,23 @@ export class MIDInstructionRecord implements MIDInstructionRecord {
         this.Reference = new FlatFileField('Reference', record.reference, FlatFileFieldType.AlphaNumeric, 35, 41)
     }
 
+    static fromRootEventPayload(rootEventPayload: RootEventPayload) {
+        return new MIDInstructionRecord({
+            cancellationIndicator: rootEventPayload.event?.type === RootEventType.PolicyCancelled ? '1' : '0',
+            expiryDate: rootEventPayload.event?.end_date,
+            policyControlCount: 1, // TODO: not sure what this is.
+            policyNumber: rootEventPayload.event?.policy_number,
+            startDate: rootEventPayload.event?.start_date,
+            updateType: getInstructionUpdateType(rootEventPayload.event?.type),
+        }) 
+    }
+
     validate(): void {
         // TODO
     }
 
     format(): string {
-        return `${this.RecordType.toString()}${this.UpdateType.toString()}${this.PolicyNumber.toString()}${this.PolicyControlCount.toString()}${this.StartDate.toString()}${this.ExpiryDate.toString()}${this.CancellationIndicator.toString()}${this.Reference?.toString()}`
+        return `${this.RecordType.format()}${this.UpdateType.format()}${this.PolicyNumber.format()}${this.PolicyControlCount.format()}${this.StartDate.format()}${this.ExpiryDate.format()}${this.CancellationIndicator.format()}${this.Reference?.format()}`
     }
 }
 
@@ -116,6 +129,6 @@ export class MIDTrailerRecord implements MIDTrailerRecord {
     }
 
     format(): string {
-        return `${this.RecordType.toString()}${this.FileSequenceNumber.toString()}${this.RecordCount.toString()}`
+        return `${this.RecordType.format()}${this.FileSequenceNumber.format()}${this.RecordCount.format()}`
     }
 }

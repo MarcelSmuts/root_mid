@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bull';
-import { json2csv } from 'json-2-csv';
-import { MIDHeaderRecord } from 'src/models/mid-record';
+import { InstructionUpdateType, MIDHeaderRecord, MIDInstructionRecord, MIDTrailerRecord } from 'src/models/mid-record';
+import * as fs from 'fs'
 
 // TODO: Move these to types files
 export enum JobStatusEnum {
@@ -23,6 +23,9 @@ export interface JobFailure extends JobStatus {
   jobs: Array<Job>;
 }
 
+// TODO: Move to db
+let fileSequenceNumber = 0;
+
 @Injectable()
 export class AggregatorService {
   private readonly logger = new Logger(AggregatorService.name);
@@ -33,7 +36,8 @@ export class AggregatorService {
     // TODO: Send the jobs off to lambda to be processed
 
     try {
-      this.createRecords(jobs)
+      const instructionRecords = this.createInstructionRecords(jobs)
+      await this.createFlatFile(instructionRecords)
     } catch (error) {
       this.logger.error(`Error processing jobs: ${error.message}`)
       callback({
@@ -50,17 +54,45 @@ export class AggregatorService {
     });
   }
 
-  // TODO: Generate CSV
-  private async createRecords(jobs: Array<Job>): Promise<void> {
+  private createInstructionRecords(jobs: Array<Job>): Array<MIDInstructionRecord> {
+
+    const records: Array<MIDInstructionRecord> = jobs.map((job: Job) => {
+      return MIDInstructionRecord.fromRootEventPayload(job.data)
+    })
+
+    return records
+  }
+
+  private async createFlatFile(records: Array<MIDInstructionRecord>): Promise<void> {
+    fileSequenceNumber++
+    const path = './flatFiles';
+
+    fs.mkdirSync(path, { recursive: true })
+    const filePath = `${path}/ff-${new Date().getTime()}-${fileSequenceNumber}`;
 
     const headerRecord = new MIDHeaderRecord({
-      date: 20210101,
-      fileSequenceNumber: 1,
+      date: new Date().getTime(),
+      fileSequenceNumber: fileSequenceNumber,
       supplierId: '1234'
     })
 
-    const records = jobs.map((job: Job) => {
-      return job.data
+    const trailerRecord = new MIDTrailerRecord({
+      fileSequenceNumber: fileSequenceNumber,
+      recordCount: records.length
     })
+
+    try {
+      const stream = fs.createWriteStream(filePath, {flags: 'a'});
+
+      stream.write(`${headerRecord.format()}\n`, 'utf8');
+      records.forEach((record) => {
+        stream.write(`${record.format()}\n`, 'utf8');
+      })
+      stream.write(`${trailerRecord.format()}\n`, 'utf8');
+
+      stream.end();
+    } catch (err) {
+      console.log(err.message);
+    }
   }
 }
