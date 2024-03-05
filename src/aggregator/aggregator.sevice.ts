@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bull';
 import { InstructionUpdateType, MIDHeaderRecord, MIDInstructionRecord, MIDTrailerRecord } from 'src/models/mid-record';
 import * as fs from 'fs'
+import { RootPlatformService } from 'src/root-platform-api/root-platform.service';
 
 // TODO: Move these to types files
 export enum JobStatusEnum {
@@ -30,13 +31,15 @@ let fileSequenceNumber = 0;
 export class AggregatorService {
   private readonly logger = new Logger(AggregatorService.name);
 
+  constructor(private readonly rootPlatformService: RootPlatformService) {}
+
   async processJobs(jobs: Array<Job>, callback: Function): Promise<JobSuccess | JobFailure> {
     this.logger.log(`Processing ${jobs.length} jobs...`)
 
     // TODO: Send the jobs off to lambda to be processed
 
     try {
-      const instructionRecords = this.createInstructionRecords(jobs)
+      const instructionRecords = await this.createInstructionRecords(jobs)
       await this.createFlatFile(instructionRecords)
     } catch (error) {
       this.logger.error(`Error processing jobs: ${error.message}`)
@@ -54,13 +57,13 @@ export class AggregatorService {
     });
   }
 
-  private createInstructionRecords(jobs: Array<Job>): Array<MIDInstructionRecord> {
+  private async createInstructionRecords(jobs: Array<Job>): Promise<Array<MIDInstructionRecord>> {
 
-    const records: Array<MIDInstructionRecord> = jobs.map((job: Job) => {
-      return MIDInstructionRecord.fromRootEventPayload(job.data)
+    const recordsPromises = jobs.map((job: Job) => {
+      return MIDInstructionRecord.fromRootEventPayload(job.data, this.rootPlatformService)
     })
 
-    return records
+    return await Promise.all(recordsPromises)
   }
 
   private async createFlatFile(records: Array<MIDInstructionRecord>): Promise<void> {

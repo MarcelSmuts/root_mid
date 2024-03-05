@@ -50,9 +50,9 @@ export class BatchProcessor {
   private async processJobsCallback(jobResult: JobSuccess | JobFailure) {
     if (jobResult.status === JobStatusEnum.FAILURE) {
       // Put the jobs back on the queue and try again
-      this.currentJobs.forEach(job => {
-        job.retry();
-      });
+      // this.currentJobs.forEach(job => {
+      //   job.retry();
+      // });
     }
   }
 }

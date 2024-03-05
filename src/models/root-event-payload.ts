@@ -2,6 +2,7 @@ export interface RootEventPayload {
     webhook_id:	string
     event?: any
     policyholder?: any
+    policy?: any
     verification_token?: string
     environment: string
   }

@@ -1,6 +1,7 @@
 import { FlatFileFieldType, padFlatFileField } from "src/utils/flat-file-formatter"
 import { RootEventPayload, RootEventType } from "./root-event-payload"
 import getInstructionUpdateType from "src/utils/root-instruction-update-type"
+import { RootPlatformService } from "src/root-platform-api/root-platform.service"
 
 export enum MIDRecordType {
     Header = 1,
@@ -75,22 +76,30 @@ export interface MIDInstructionRecord extends FlatFileRecord {
     ExpiryDate: FlatFileField<number>
     CancellationIndicator: FlatFileField<string>
     Reference?: FlatFileField<string>
+    PolicyHolderName?: FlatFileField<string>
 }
 
 export class MIDInstructionRecord implements MIDInstructionRecord {
     readonly RecordType = new FlatFileField('RecordType', MIDRecordType.Instruction, FlatFileFieldType.Numeric, 1, 1)
 
-    constructor(record: {updateType: InstructionUpdateType, policyNumber: string, policyControlCount: number, startDate: number, expiryDate: number, cancellationIndicator: string, reference?: string}) {
+    constructor(record: {updateType: InstructionUpdateType, policyNumber: string, policyControlCount: number, startDate: number, expiryDate: number, cancellationIndicator: string, reference?: string, policyHolderName: string}) {
         this.UpdateType = new FlatFileField('UpdateType', record.updateType, FlatFileFieldType.AlphaNumeric, 1, 2)
         this.PolicyNumber = new FlatFileField('PolicyNumber', record.policyNumber, FlatFileFieldType.AlphaNumeric, 20, 3)
         this.PolicyControlCount = new FlatFileField('PolicyControlCount', record.policyControlCount, FlatFileFieldType.Numeric, 4, 23)
         this.StartDate = new FlatFileField('StartDate', record.startDate, FlatFileFieldType.Numeric, 8, 31)
         this.ExpiryDate = new FlatFileField('ExpiryDate', record.expiryDate, FlatFileFieldType.Numeric, 8, 39)
         this.CancellationIndicator = new FlatFileField('CancellationIndicator', record.cancellationIndicator, FlatFileFieldType.AlphaNumeric, 1, 40)
-        this.Reference = new FlatFileField('Reference', record.reference, FlatFileFieldType.AlphaNumeric, 35, 41)
+        this.Reference = new FlatFileField('Reference', record.reference, FlatFileFieldType.AlphaNumeric, 35, 61)
+        this.PolicyHolderName = new FlatFileField('PolicyHolderName', record.policyHolderName, FlatFileFieldType.AlphaNumeric, 20, 41)
     }
 
-    static fromRootEventPayload(rootEventPayload: RootEventPayload) {
+    static async fromRootEventPayload(rootEventPayload: RootEventPayload, rootPlatformService: RootPlatformService) {
+        const policyHolder = await rootPlatformService.getPolicyHolder(rootEventPayload)
+
+        if (!policyHolder) {
+            throw new Error('No Policyholder data')
+        }
+
         return new MIDInstructionRecord({
             cancellationIndicator: rootEventPayload.event?.type === RootEventType.PolicyCancelled ? '1' : '0',
             expiryDate: rootEventPayload.event?.end_date,
@@ -98,6 +107,7 @@ export class MIDInstructionRecord implements MIDInstructionRecord {
             policyNumber: rootEventPayload.event?.policy_number,
             startDate: rootEventPayload.event?.start_date,
             updateType: getInstructionUpdateType(rootEventPayload.event?.type),
+            policyHolderName: `${policyHolder.first_name} ${policyHolder.last_name}`
         }) 
     }
 
@@ -106,7 +116,7 @@ export class MIDInstructionRecord implements MIDInstructionRecord {
     }
 
     format(): string {
-        return `${this.RecordType.format()}${this.UpdateType.format()}${this.PolicyNumber.format()}${this.PolicyControlCount.format()}${this.StartDate.format()}${this.ExpiryDate.format()}${this.CancellationIndicator.format()}${this.Reference?.format()}`
+        return `${this.RecordType.format()}${this.UpdateType.format()}${this.PolicyNumber.format()}${this.PolicyControlCount.format()}${this.StartDate.format()}${this.ExpiryDate.format()}${this.CancellationIndicator.format()}${this.PolicyHolderName?.format()}${this.Reference?.format()}`
     }
 }
 
